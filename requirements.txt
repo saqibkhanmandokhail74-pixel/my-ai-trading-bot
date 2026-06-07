@@ -1,3 +1,4 @@
 streamlit
 ccxt
 yfinance
+streamlit-lightweight-charts-v5
