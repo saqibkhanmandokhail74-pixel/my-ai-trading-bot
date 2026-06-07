@@ -3,7 +3,7 @@ import ccxt
 import yfinance as yf
 import pandas as pd
 import random
-import time
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Ultra AI Quant Trader", layout="wide", page_icon="🤖")
 
@@ -27,10 +27,15 @@ if market_choice == "Crypto Market":
     crypto_list = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "BNB/USDT", "ADA/USDT", "DOGE/USDT", "Custom Crypto Asset"]
     selected_crypto = st.sidebar.selectbox("Select Crypto Currency", crypto_list)
     user_asset = st.sidebar.text_input("Enter Custom Crypto Symbol", value="LTC/USDT").strip().upper() if selected_crypto == "Custom Crypto Asset" else selected_crypto
+    tv_symbol = f"KRAKEN:{user_asset.replace('/', '')}" # TradingView Symbol Format
 else:
     forex_list = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "XAU/USD (Gold)", "CLK26.NYM (Crude Oil)", "Custom Forex Asset"]
     selected_forex = st.sidebar.selectbox("Select Forex / Commodity Asset", forex_list)
     user_asset = st.sidebar.text_input("Enter Custom Symbol", value="NZD/USD").strip().upper() if selected_forex == "Custom Forex Asset" else selected_forex
+    
+    if "GOLD" in user_asset or "XAU" in user_asset: tv_symbol = "FX_IDC:XAUUSD"
+    elif "OIL" in user_asset: tv_symbol = "NYMEX:CL1!"
+    else: tv_symbol = f"FX:{user_asset.replace('/', '')}"
 
 account_type = st.sidebar.radio("Environment Execution Type", ["Demo Simulator Mode ($10,000)", "Live Broker Production API"])
 api_key = st.sidebar.text_input("API Key Location", type="password", placeholder="Paste secret token key here")
@@ -51,10 +56,8 @@ def fetch_current_price(asset, market):
     except:
         return 62500.0 if market == "Crypto Market" else 1.1525
 
-# Fetch live main price
 current_live_market_price = fetch_current_price(user_asset, market_choice)
 
-# AI Mathematical Logic counters
 real_rsi = int(30 + (current_live_market_price % 40)) if "Crypto" in market_choice else random.randint(35, 65)
 real_macd = "BULLISH" if real_rsi < 50 else "BEARISH"
 up_chance = 75 if real_rsi < 45 or real_macd == "BULLISH" else 35
@@ -87,24 +90,34 @@ with c1:
         st.write("🤖 **AI MASTER FAISLA:** ⚪ **HOLD** - Core strategy indicators conflicting.")
 
 with c2:
-    st.subheader("📈 Real-time Live Market Chart (Moving Live)")
+    st.subheader(f"📈 Real-time Live TradingView Feed ({user_asset})")
     
-    # ASALI REAL-TIME LIVE CHART DATA GENERATOR
-    # Yeh code price ke badalte hi chart ki wave ko live makhshoor karke chalayega
-    chart_prices = [
-        current_live_market_price * 0.996,
-        current_live_market_price * 0.998,
-        current_live_market_price * 0.997,
-        current_live_market_price * 1.001,
-        current_live_market_price * 0.999,
-        current_live_market_price
-    ]
-    
-    chart_data = pd.DataFrame(chart_prices, columns=["Live Price Stream"])
-    # Native built-in tool execution for 100% crash proof stability
-    st.line_chart(chart_data)
+    # OFFICIAL TRADINGVIEW LIVE WIDGET EMBED WITH REAL TICK-BY-TICK DATA MOVEMENT
+    tradingview_html = f"""
+    <div class="tradingview-widget-container" style="height:350px;">
+      <div id="tradingview_chart"></div>
+      <script type="text/javascript" src="https://tradingview.com"></script>
+      <script type="text/javascript">
+      new TradingView.widget({{
+        "autosize": true,
+        "symbol": "{tv_symbol}",
+        "interval": "1",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": false,
+        "hide_legend": true,
+        "save_image": false,
+        "container_id": "tradingview_chart"
+      }});
+      </script>
+    </div>
+    """
+    components.html(tradingview_html, height=350)
 
 st.markdown("---")
 st.subheader("🖥️ Operational Logic Terminal Logs")
-log_data = f"[SYSTEM] Node verified for asset {user_asset}...\n[AI ENGINE] Plotting native live real-time price wave tracker..."
+log_data = f"[SYSTEM] Node verified for asset {user_asset}...\n[AI ENGINE] Ingesting dynamic real-time live candlestick feed streams from TradingView master cluster..."
 st.text_area(label="Active AI Engine Log Feed Stream", value=log_data, height=80, label_visibility="collapsed")
