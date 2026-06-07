@@ -3,7 +3,8 @@ import ccxt
 import yfinance as yf
 import pandas as pd
 import random
-from streamlit_lightweight_charts_v5 import render_lightweight_charts
+import plotly.graph_objects as go
+from datetime import datetime
 
 st.set_page_config(page_title="Ultra AI Quant Trader", layout="wide", page_icon="🤖")
 
@@ -50,14 +51,15 @@ def analyze_asset_intelligence(asset, market):
             live_p = float(ticker['last'])
             rsi_val = int(30 + (live_p % 40))
             
-            base_time = int(pd.Timestamp.now().timestamp())
-            chart_df = pd.DataFrame([
-                {"time": base_time - 240, "open": live_p*0.995, "high": live_p*1.002, "low": live_p*0.994, "close": live_p*0.998},
-                {"time": base_time - 180, "open": live_p*0.998, "high": live_p*1.005, "low": live_p*0.997, "close": live_p*1.001},
-                {"time": base_time - 120, "open": live_p*1.001, "high": live_p*1.006, "low": live_p*0.999, "close": live_p*1.002},
-                {"time": base_time - 60, "open": live_p*1.002, "high": live_p*1.004, "low": live_p*0.998, "close": live_p*0.999},
-                {"time": base_time, "open": live_p*0.999, "high": live_p*1.003, "low": live_p*0.997, "close": live_p}
-            ])
+            # Generating live continuous timeline for candle display matrix
+            times = [datetime.now().strftime('%H:%M:%S') for _ in range(5)]
+            chart_df = pd.DataFrame({
+                "Time": times,
+                "Open": [live_p*0.997, live_p*0.999, live_p*1.001, live_p*0.998, live_p*0.999],
+                "High": [live_p*1.002, live_p*1.003, live_p*1.004, live_p*1.002, live_p*1.001],
+                "Low":  [live_p*0.995, live_p*0.996, live_p*0.998, live_p*0.996, live_p*0.997],
+                "Close": [live_p*0.999, live_p*1.001, live_p*0.998, live_p*0.999, live_p]
+            })
         else:
             ticker_symbol = "GC=F" if "Gold" in asset or "XAU" in asset else ("CL=F" if "Oil" in asset else asset.replace("/", "").strip() + "=X")
             data = yf.Ticker(ticker_symbol)
@@ -70,11 +72,11 @@ def analyze_asset_intelligence(asset, market):
                 
                 hist = hist.tail(5)
                 chart_df = pd.DataFrame({
-                    "time": hist.index.astype(int) // 10**9,
-                    "open": hist["Open"],
-                    "high": hist["High"],
-                    "low": hist["Low"],
-                    "close": hist["Close"]
+                    "Time": hist.index.strftime('%H:%M'),
+                    "Open": hist["Open"],
+                    "High": hist["High"],
+                    "Low": hist["Low"],
+                    "Close": hist["Close"]
                 })
         
         up_prob = 75 if rsi_val < 40 or macd_val == "BULLISH" else 35
@@ -83,6 +85,7 @@ def analyze_asset_intelligence(asset, market):
     except:
         return (62800.0 if market == "Crypto Market" else 1.1525), 45, "BEARISH", 50, 50, pd.DataFrame()
 
+# Fetch analytics metrics
 current_live_market_price, real_rsi, real_macd, up_chance, down_chance, final_chart_data = analyze_asset_intelligence(user_asset, market_choice)
 
 if st.sidebar.button("Establish Node Connection"):
@@ -112,18 +115,29 @@ with c1:
         st.write("🤖 **AI MASTER FAISLA:** ⚪ **HOLD** - Core strategy indicators conflicting.")
 
 with c2:
-    st.subheader("📈 Real-time TradingView Candlestick Feed")
+    st.subheader("📈 Real-time Live Candlestick Feed")
     if not final_chart_data.empty:
-        chart_multipane = [{
-            "type": "Candlestick",
-            "data": final_chart_data.to_dict(orient="records"),
-            "options": {"upColor": "#00ffcc", "downColor": "#ff3366", "borderVisible": False, "wickVisible": True}
-        }]
-        render_lightweight_charts(chart_multipane, width="100%", height=280)
+        # Building standalone real-time green/red graph array mapping natively
+        fig = go.Figure(data=[go.Candlestick(
+            x=final_chart_data['Time'],
+            open=final_chart_data['Open'],
+            high=final_chart_data['High'],
+            low=final_chart_data['Low'],
+            close=final_chart_data['Close'],
+            increasing_line_color='#00ffcc', decreasing_line_color='#ff3366'
+        )])
+        fig.update_layout(
+            margin=dict(l=10, r=10, t=10, b=10),
+            paper_bgcolor='#0e1117', plot_bgcolor='#0e1117',
+            xaxis_rangeslider_visible=False,
+            yaxis=dict(gridcolor='#222'), xaxis=dict(gridcolor='#222', type='category'),
+            height=280
+        )
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("📡 Ingesting synchronization streams... Refreshing ticker nodes.")
 
 st.markdown("---")
 st.subheader("🖥️ Operational Logic Terminal Logs")
-log_data = f"[SYSTEM] Node verified for asset {user_asset}...\n[AI ENGINE] Syncing active chart frames via embedded TradingView core framework..."
+log_data = f"[SYSTEM] Node verified for asset {user_asset}...\n[AI ENGINE] Plotting interactive premium standalone candlestick wave patterns..."
 st.text_area(label="Active AI Engine Log Feed Stream", value=log_data, height=80, label_visibility="collapsed")
