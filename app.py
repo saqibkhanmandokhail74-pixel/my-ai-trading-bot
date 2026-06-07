@@ -50,25 +50,25 @@ def analyze_asset_intelligence(asset, market):
             live_p = float(ticker['last'])
             rsi_val = int(30 + (live_p % 40))
             
-            # Simulated short timeframe chart series array mapping
             base_time = int(pd.Timestamp.now().timestamp())
             chart_df = pd.DataFrame([
-                {"time": base_time - 120, "open": live_p*0.995, "high": live_p*1.002, "low": live_p*0.994, "close": live_p*0.998},
-                {"time": base_time - 60, "open": live_p*0.998, "high": live_p*1.005, "low": live_p*0.997, "close": live_p*1.001},
-                {"time": base_time, "open": live_p*1.001, "high": live_p*1.006, "low": live_p*0.999, "close": live_p}
+                {"time": base_time - 240, "open": live_p*0.995, "high": live_p*1.002, "low": live_p*0.994, "close": live_p*0.998},
+                {"time": base_time - 180, "open": live_p*0.998, "high": live_p*1.005, "low": live_p*0.997, "close": live_p*1.001},
+                {"time": base_time - 120, "open": live_p*1.001, "high": live_p*1.006, "low": live_p*0.999, "close": live_p*1.002},
+                {"time": base_time - 60, "open": live_p*1.002, "high": live_p*1.004, "low": live_p*0.998, "close": live_p*0.999},
+                {"time": base_time, "open": live_p*0.999, "high": live_p*1.003, "low": live_p*0.997, "close": live_p}
             ])
         else:
             ticker_symbol = "GC=F" if "Gold" in asset or "XAU" in asset else ("CL=F" if "Oil" in asset else asset.replace("/", "").strip() + "=X")
             data = yf.Ticker(ticker_symbol)
-            hist = data.history(period='5d', interval='15m')
+            hist = data.history(period='1d', interval='15m')
             if not hist.empty:
                 live_p = float(hist['Close'].iloc[-1])
                 prev_p = float(hist['Close'].iloc[-2])
                 rsi_val = 65 if live_p > prev_p else 35
                 macd_val = "BULLISH" if live_p > prev_p else "BEARISH"
                 
-                # Dynamic mapping for lightweight chart matrix component
-                hist = hist.tail(10)
+                hist = hist.tail(5)
                 chart_df = pd.DataFrame({
                     "time": hist.index.astype(int) // 10**9,
                     "open": hist["Open"],
@@ -83,7 +83,6 @@ def analyze_asset_intelligence(asset, market):
     except:
         return (62800.0 if market == "Crypto Market" else 1.1525), 45, "BEARISH", 50, 50, pd.DataFrame()
 
-# Fetch analytics metrics
 current_live_market_price, real_rsi, real_macd, up_chance, down_chance, final_chart_data = analyze_asset_intelligence(user_asset, market_choice)
 
 if st.sidebar.button("Establish Node Connection"):
@@ -115,7 +114,6 @@ with c1:
 with c2:
     st.subheader("📈 Real-time TradingView Candlestick Feed")
     if not final_chart_data.empty:
-        # TradingView Lightweight Layout Generator configuration matrix
         chart_multipane = [{
             "type": "Candlestick",
             "data": final_chart_data.to_dict(orient="records"),
